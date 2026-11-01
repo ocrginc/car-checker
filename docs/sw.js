@@ -1,6 +1,6 @@
 // Offline: every app file is saved on install and served from the phone from then on.
 // Bump VERSION whenever a file below changes, so phones pick up the new version.
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = "car-checker-" + VERSION;
 const FILES = [
   "./",

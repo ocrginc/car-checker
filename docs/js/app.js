@@ -1,7 +1,7 @@
 // Home screen and Taken out tab.
 import { $, esc, ago, plural, when, firstLetter, toast, errorText, twoTap } from "./util.js";
 import {
-  state, load, subscribe, SECTIONS, OLD_DAYS, containerOf, shortName,
+  state, load, subscribe, OLD_DAYS, containerOf, shortName,
   itemsIn, itemsOut, outCutoff, clearOlder, setInsidePhoto
 } from "./store.js";
 import { cachedThumb, loadThumbs, processPhoto } from "./photos.js";
@@ -41,17 +41,17 @@ function renderSegments() {
   $("#segments").innerHTML = seg("all", "All") + state.containers.map(c => seg(c.id, shortName(c))).join("");
 }
 
-function renderChips(inContainer) {
-  const used = SECTIONS.filter(s => inContainer.some(i => i.section === s));
-  if (section && !used.includes(section)) section = "";
+function renderChips(container, inContainer) {
+  const used = container.sections.filter(s => inContainer.some(i => i.section === s.name));
+  if (section && !used.some(s => s.name === section)) section = "";
   $("#chips").hidden = !used.length;
-  $("#chips").innerHTML = used.map(s => `<button data-chip="${esc(s)}" data-section="${esc(s)}" aria-pressed="${section === s}">${esc(s)}</button>`).join("");
+  $("#chips").innerHTML = used.map(s => `<button data-chip="${esc(s.name)}" data-tape="${esc(s.color)}" aria-pressed="${section === s.name}">${esc(s.name)}</button>`).join("");
 }
 
 function renderTrunk(words) {
   const shown = segment === "all" ? state.containers : [containerOf(segment)];
   $("#chips").hidden = segment === "all";
-  if (segment !== "all") renderChips(itemsIn(segment));
+  if (segment !== "all") renderChips(containerOf(segment), itemsIn(segment));
   else section = "";
 
   let html = "";
