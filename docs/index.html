@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trunk</title>
+<meta name="description" content="What's in my car trunk.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#CDBB9C" data-base="#CDBB9C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trunk">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app">
+  <div id="scroller">
+    <header class="topbar">
+      <button class="link" id="btn-containers">Containers</button>
+      <button class="link strong" id="btn-add">Add</button>
+    </header>
+    <div class="content">
+      <div class="heading">
+        <h1 id="title">Trunk</h1>
+        <p id="subtitle"></p>
+      </div>
+      <form class="search" id="search-form" role="search">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15zM16 16l5 5"/></svg>
+        <label for="q" class="vh">Search</label>
+        <input id="q" type="search" placeholder="Search" autocomplete="off" autocorrect="off" enterkeyhint="search">
+      </form>
+      <div class="segments" id="segments"></div>
+      <div class="chips" id="chips" hidden></div>
+      <main id="list"></main>
+      <p class="hint" id="hint" hidden></p>
+    </div>
+  </div>
+
+  <nav class="tabbar" aria-label="Main">
+    <button class="tab" id="tab-in">
+      <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path class="fillable" d="M3 9h18l-2 11H5z"/><path d="M6 9V6h12v3"/></svg>
+      <span class="tab-label">Trunk</span>
+    </button>
+    <button class="tab" id="tab-out">
+      <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M4 12h12M12 7l5 5-5 5M20 4v16"/></svg>
+      <span class="tab-label">Taken out</span>
+      <span class="badge" id="out-badge" hidden></span>
+    </button>
+  </nav>
+</div>
+
+<!-- Enlarged photo -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Item photo" hidden>
+  <div class="v-top">
+    <button class="v-btn" id="v-close">Close</button>
+    <span id="v-caption" aria-live="polite"></span>
+    <button class="v-btn strong" id="v-edit">Edit</button>
+  </div>
+  <div class="v-stage" id="v-stage">
+    <div class="v-track" id="v-track">
+      <div class="v-slide"><img alt="" draggable="false"><div class="v-letter" hidden></div></div>
+      <div class="v-slide"><img alt="" draggable="false"><div class="v-letter" hidden></div></div>
+      <div class="v-slide"><img alt="" draggable="false"><div class="v-letter" hidden></div></div>
+    </div>
+    <button class="v-arrow left" id="v-prev" aria-label="Previous item"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="v-arrow right" id="v-next" aria-label="Next item"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  </div>
+  <div class="v-dots" id="v-dots" aria-hidden="true"></div>
+  <div class="v-sheet" id="v-sheet"></div>
+</div>
+
+<!-- Add / edit item -->
+<div class="modal" id="editor" hidden>
+  <form class="panel" id="editor-form" role="dialog" aria-modal="true" aria-labelledby="editor-title" novalidate>
+    <div class="panel-head">
+      <button type="button" class="link" id="editor-cancel">Cancel</button>
+      <h2 id="editor-title">Add item</h2>
+      <button type="submit" class="link strong" id="editor-save">Save</button>
+    </div>
+    <div class="panel-body">
+      <label class="picker" id="picker">
+        <input type="file" id="photo-input" accept="image/*">
+        <img id="picker-img" alt="Item photo" hidden>
+        <span id="picker-empty">
+          <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M3 7h3.5L8 5h8l1.5 2H21v12H3z"/><path d="M12 16.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+          Take or choose a photo
+        </span>
+      </label>
+      <button type="button" class="link center" id="remove-photo" hidden>Remove photo</button>
+      <div class="group">
+        <label class="row"><span>Name</span><input id="f-name" maxlength="80" placeholder="Grey hoodie" autocapitalize="sentences"></label>
+        <label class="row"><span>Container</span><select id="f-container"></select></label>
+        <label class="row" id="new-container-row" hidden><span>New name</span><input id="f-new-container" maxlength="40" placeholder="Roof box"></label>
+        <label class="row"><span>Section</span><select id="f-section"></select></label>
+        <div class="row"><span id="qty-label">Quantity</span>
+          <div class="stepper" role="group" aria-labelledby="qty-label">
+            <button type="button" id="qty-minus" aria-label="One less">−</button>
+            <input id="f-qty" type="number" inputmode="numeric" min="1" max="99" value="1" aria-labelledby="qty-label">
+            <button type="button" id="qty-plus" aria-label="One more">+</button>
+          </div>
+        </div>
+        <label class="row"><span>Note</span><input id="f-note" maxlength="140" placeholder="Size, color, whose it is"></label>
+      </div>
+      <p class="error" id="editor-error" role="alert" hidden></p>
+      <p class="tagline" id="editor-tag" hidden></p>
+      <button type="button" class="danger" id="editor-delete" hidden>Delete item</button>
+    </div>
+  </form>
+</div>
+
+<!-- Containers -->
+<div class="modal" id="containers" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="containers-title">
+    <div class="panel-head">
+      <span></span>
+      <h2 id="containers-title">Containers</h2>
+      <button type="button" class="link strong" id="containers-done">Done</button>
+    </div>
+    <div class="panel-body">
+      <div class="group" id="containers-list"></div>
+      <div class="group">
+        <div class="row">
+          <input id="new-container" maxlength="40" placeholder="Add a container, like Roof box" aria-label="New container name">
+          <button type="button" class="link strong" id="add-container">Add</button>
+        </div>
+      </div>
+      <p class="error" id="containers-error" role="alert" hidden></p>
+      <p class="tagline">A container can be removed once it has no items, including taken-out ones.</p>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="inside-input" class="vh" accept="image/*" tabindex="-1" aria-label="Inside view photo">
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

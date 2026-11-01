@@ -1,0 +1,6 @@
+# Only the app in docs/ is published. Everything else in this folder stays private.
+*
+!.gitignore
+!docs/
+!docs/**
+.DS_Store
