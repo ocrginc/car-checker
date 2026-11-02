@@ -1,6 +1,6 @@
 // Full-screen enlarged view: swipe between items, pinch and double-tap to zoom, swipe down to close.
-import { $, esc, shortDate, padTag, firstLetter, toast, errorText, when } from "./util.js";
-import { state, subscribe, containerOf, shortName, itemsIn, itemsOut, setStatus, setInsidePhoto } from "./store.js";
+import { $, esc, shortDate, padTag, firstLetter, toast, errorText } from "./util.js";
+import { state, subscribe, containerOf, shortName, itemsIn, itemsOut, setStatus } from "./store.js";
 import { cachedThumb, loadThumbs, loadFull } from "./photos.js";
 import { openEditor } from "./editor.js";
 
@@ -14,15 +14,10 @@ let slides = [...track.querySelectorAll(".v-slide")]; // always [previous, curre
 
 let entries = [];   // what can be swiped through
 let index = 0;
-let mode = "item";  // "item" | "inside"
-let insideId = null;
-let onRetake = null;
 let busy = false;
 let animating = false;
 
 /* ---------- Entries ---------- */
-const photoOf = entry => (mode === "item" ? entry.photo : entry.insidePhoto);
-
 function itemEntries(item) {
   return item.status === "out" ? itemsOut() : itemsIn(item.containerId);
 }
@@ -42,9 +37,9 @@ function clearFulls() {
 async function fillSlide(slide, entry) {
   const img = slide.querySelector("img"), letter = slide.querySelector(".v-letter");
   const key = entry ? entry.id : "";
-  if (slide.dataset.key === key && (entry ? slide.dataset.photo === (photoOf(entry) || "") : true)) return;
+  if (slide.dataset.key === key && (entry ? slide.dataset.photo === (entry.photo || "") : true)) return;
   slide.dataset.key = key;
-  const photo = entry ? photoOf(entry) : null;
+  const photo = entry ? entry.photo : null;
   slide.dataset.photo = photo || "";
 
   img.hidden = !photo;
@@ -85,13 +80,8 @@ function fillAll() {
 /* ---------- Header, dots, sheet ---------- */
 function renderChrome() {
   const entry = entries[index];
-  if (mode === "item") {
-    const label = entry.status === "out" ? "Taken out" : shortName(containerOf(entry.containerId));
-    $("#v-caption").textContent = `${index + 1} of ${entries.length} · ${label}`;
-  } else {
-    $("#v-caption").textContent = "Inside view · " + shortName(entry);
-  }
-  $("#v-edit").style.visibility = mode === "item" ? "" : "hidden"; // keeps the caption centered
+  const label = entry.status === "out" ? "Taken out" : shortName(containerOf(entry.containerId));
+  $("#v-caption").textContent = `${index + 1} of ${entries.length} · ${label}`;
   $("#v-prev").hidden = index === 0;
   $("#v-next").hidden = index >= entries.length - 1;
 
@@ -102,7 +92,7 @@ function renderChrome() {
   if (n > 1) for (let i = start; i < start + count; i++) dots += `<span${i === index ? ' class="on"' : ""}></span>`;
   $("#v-dots").innerHTML = dots;
 
-  $("#v-sheet").innerHTML = mode === "item" ? itemSheet(entry) : insideSheet(entry);
+  $("#v-sheet").innerHTML = itemSheet(entry);
 }
 
 function itemSheet(item) {
@@ -119,13 +109,6 @@ function itemSheet(item) {
       ${row("Tag", padTag(item.tag), "tabular")}
     </div>
     <button class="primary ${out ? "yellow" : "red"}" id="v-move">${out ? "Put back" : "Take out"}</button>`;
-}
-
-function insideSheet(c) {
-  return `<span class="handle" data-handle></span>
-    <div class="v-title"><h3>${esc(c.name)}</h3><span>Inside view from ${esc(when(c.insideAt))}</span></div>
-    <button class="primary yellow" id="v-retake">Retake photo</button>
-    <button class="plain" id="v-remove-inside">Remove photo</button>`;
 }
 
 $("#v-sheet").addEventListener("click", async e => {
@@ -145,11 +128,6 @@ $("#v-sheet").addEventListener("click", async e => {
       toast(errorText(ex));
       b.disabled = false;
     } finally { busy = false; }
-  } else if (b.id === "v-retake") {
-    if (onRetake) onRetake();
-  } else if (b.id === "v-remove-inside") {
-    try { await setInsidePhoto(entry.id, null); close(); toast("Inside view removed"); }
-    catch (ex) { toast(errorText(ex)); }
   }
 });
 
@@ -174,18 +152,8 @@ function show() {
 }
 
 export function openItemViewer(item) {
-  mode = "item";
   entries = itemEntries(item);
   index = Math.max(0, entries.findIndex(i => i.id === item.id));
-  show();
-}
-
-export function openInsideViewer(container, retake) {
-  mode = "inside";
-  insideId = container.id;
-  onRetake = retake;
-  entries = [container];
-  index = 0;
   show();
 }
 
@@ -205,9 +173,7 @@ function close() {
 }
 
 $("#v-close").addEventListener("click", close);
-$("#v-edit").addEventListener("click", () => {
-  if (mode === "item") openEditor(entries[index]);
-});
+$("#v-edit").addEventListener("click", () => openEditor(entries[index]));
 $("#v-prev").addEventListener("click", () => go(-1));
 $("#v-next").addEventListener("click", () => go(1));
 document.addEventListener("keydown", e => {
@@ -217,22 +183,14 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowRight" && index < entries.length - 1) go(1);
 });
 
-// An edit, retake or delete changes the data underneath, so rebuild from it.
+// An edit or delete changes the data underneath, so rebuild from it.
 subscribe(() => {
   if (viewer.hidden) return;
-  if (mode === "item") {
-    const id = entries[index] && entries[index].id;
-    const item = state.items.find(i => i.id === id);
-    if (!item) { close(); return; }
-    entries = itemEntries(item);
-    index = Math.max(0, entries.findIndex(i => i.id === id));
-  } else {
-    const c = containerOf(insideId);
-    if (!c || !c.insidePhoto) { close(); return; }
-    entries = [c];
-    index = 0;
-    resetZoom(false);
-  }
+  const id = entries[index] && entries[index].id;
+  const item = state.items.find(i => i.id === id);
+  if (!item) { close(); return; }
+  entries = itemEntries(item);
+  index = Math.max(0, entries.findIndex(i => i.id === id));
   fillAll();
   renderChrome();
 });

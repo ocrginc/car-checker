@@ -2,11 +2,11 @@
 import { $, esc, ago, plural, when, firstLetter, toast, errorText, twoTap } from "./util.js";
 import {
   state, load, subscribe, OLD_DAYS, containerOf, shortName,
-  itemsIn, itemsOut, outCutoff, clearOlder, setInsidePhoto
+  itemsIn, itemsOut, outCutoff, clearOlder
 } from "./store.js";
-import { cachedThumb, loadThumbs, processPhoto } from "./photos.js";
+import { cachedThumb, loadThumbs } from "./photos.js";
 import { openEditor, openContainers, editorDefaults } from "./editor.js";
-import { openItemViewer, openInsideViewer } from "./viewer.js";
+import { openItemViewer } from "./viewer.js";
 
 let tab = "in";
 let segment = "all"; // "all" or a container id
@@ -61,8 +61,7 @@ function renderTrunk(words) {
     const body = list.length
       ? gridHTML(list, i => i.section)
       : `<p class="empty">${section ? "Nothing in this section." : "Nothing here yet."}</p>`;
-    html += `<section><div class="group-head"><h2>${esc(c.name)} <span class="count">· ${list.length}</span></h2>` +
-      `<button class="inside-link" data-inside="${esc(c.id)}">Inside view</button></div><div class="bin">${body}</div></section>`;
+    html += `<section><div class="group-head"><h2>${esc(c.name)} <span class="count">· ${list.length}</span></h2></div><div class="bin">${body}</div></section>`;
   }
   if (!state.containers.length) html = `<p class="status">No containers yet. Tap Containers to add one.</p>`;
   if (!html) html = `<p class="status">Nothing in the trunk matches “${esc(query)}”.</p>`;
@@ -147,8 +146,6 @@ $("#list").addEventListener("click", e => {
   if (b.dataset.item) {
     const item = state.items.find(i => i.id === b.dataset.item);
     if (item) openItemViewer(item);
-  } else if (b.dataset.inside) {
-    openInside(b.dataset.inside);
   } else if ("olderToggle" in b.dataset) {
     showOlder = !showOlder;
     render();
@@ -158,29 +155,6 @@ $("#list").addEventListener("click", e => {
       catch (ex) { toast(errorText(ex)); }
     });
   }
-});
-
-let insideTarget = null;
-function openInside(id) {
-  const c = containerOf(id);
-  if (!c) return;
-  if (c.insidePhoto) { openInsideViewer(c, () => pickInside(id)); return; }
-  pickInside(id);
-}
-function pickInside(id) {
-  insideTarget = id;
-  $("#inside-input").click();
-}
-$("#inside-input").addEventListener("change", async e => {
-  const file = e.target.files && e.target.files[0];
-  e.target.value = "";
-  if (!file || !insideTarget) return;
-  const id = insideTarget;
-  toast("Saving inside view…");
-  try {
-    await setInsidePhoto(id, await processPhoto(file));
-    toast("Inside view saved");
-  } catch (ex) { toast(errorText(ex)); }
 });
 
 $("#segments").addEventListener("click", e => {

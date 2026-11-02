@@ -154,15 +154,6 @@ h2 {
   box-shadow: var(--shadow);
 }
 h2 .count { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: 0; }
-.inside-link {
-  position: relative; flex-shrink: 0;
-  background: var(--paper); color: var(--ink);
-  border: 1.5px solid var(--line); border-radius: 3px;
-  padding: 3px 7px;
-  font-family: var(--tape-font); font-weight: 500; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
-  box-shadow: var(--shadow);
-}
-.inside-link::after { content: ""; position: absolute; inset: -9px -6px; } /* a bigger area to tap */
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
 .tile { display: flex; flex-direction: column; gap: 5px; min-width: 0; background: none; border: 0; padding: 0; text-align: left; }
 .pic {

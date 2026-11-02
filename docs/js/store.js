@@ -34,7 +34,7 @@ export async function load() {
       { id: "c-storage", name: "Storage container", short: "Storage", order: 1 },
       { id: "c-shoes", name: "Shoe container", short: "Shoes", order: 2 },
       { id: "c-loose", name: "Loose in trunk", short: "Loose", order: 3 }
-    ].map(c => ({ ...c, sections: c.id === "c-storage" ? starterSections() : [], insidePhoto: null, insideAt: null }));
+    ].map(c => ({ ...c, sections: c.id === "c-storage" ? starterSections() : [] }));
     await write(["containers", "meta"], s => {
       seed.forEach(c => s.containers.put(c));
       s.meta.put(true, "seeded");
@@ -157,7 +157,7 @@ export const clearOlder = () => {
 
 export async function addContainer(name) {
   const order = state.containers.reduce((m, c) => Math.max(m, c.order), 0) + 1;
-  const c = { id: newId("c"), name, short: null, order, sections: [], insidePhoto: null, insideAt: null };
+  const c = { id: newId("c"), name, short: null, order, sections: [] };
   await write(["containers"], s => s.containers.put(c));
   state.containers.push(c);
   sortContainers();
@@ -218,19 +218,5 @@ export async function removeSection(containerId, name) {
   const sections = c.sections.filter(s => s.name !== name);
   await write(["containers"], s => s.containers.put({ ...c, sections }));
   c.sections = sections;
-  emit();
-}
-
-// photo: an object replaces the inside view, null removes it.
-export async function setInsidePhoto(id, photo) {
-  const c = containerOf(id);
-  const next = { ...c, insidePhoto: photo ? newId("p") : null, insideAt: photo ? Date.now() : null };
-  await write(["containers", "photos"], s => {
-    s.containers.put(next);
-    if (c.insidePhoto) deletePhoto(s.photos, c.insidePhoto);
-    if (photo) putPhoto(s.photos, next.insidePhoto, photo);
-  });
-  if (c.insidePhoto) dropThumb(c.insidePhoto);
-  Object.assign(c, next);
   emit();
 }
